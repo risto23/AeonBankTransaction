@@ -48,8 +48,8 @@ Extras:
 ### 1. Install dependencies
 
 ```sh
-git clone <this-repo-url>
-cd AeonTransactions
+git clone https://github.com/risto23/AeonBankTransaction.git
+cd AeonBankTransaction
 npm install
 ```
 
