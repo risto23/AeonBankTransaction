@@ -1,97 +1,174 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# AEON Bank – Transactions
 
-# Getting Started
+A React Native (TypeScript) app that lets banking customers browse their latest transactions, open a transaction to see its details, and share it to any app on the device.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+---
 
-## Step 1: Start Metro
+## Features
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+| Requirement                                                  | Implementation                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| List of latest transactions (transfer details, date, amount) | `TransactionListScreen` shows a `SectionList` grouped by month and sorted newest first. Each row shows the transfer name, recipient, date and signed amount.                                                                                                  |
+| Incoming vs. outgoing                                        | Worked out from the sign of `amount`: green `↓ +RM` for money in, red `↑ -RM` for money out. A summary card at the top totals both.                                                                                                                           |
+| Tap an item to see details                                   | Navigates to `TransactionDetailScreen`, which shows the **Reference ID, date, recipient name and transfer amount**.                                                                                                                                           |
+| Share the transfer details externally                        | The **Share** button opens the native share sheet (WhatsApp, Telegram, email, Messages, Save to Files, ...). The receipt card is captured as a PNG and attached together with a plain-text summary. If the capture fails, it falls back to sharing text only. |
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+Extras:
+
+- **Zustand** store with `loading` / `refreshing` / `success` / `error` states, and a guard that stops duplicate fetches.
+- Pull-to-refresh, plus loading, empty and error screens (the error screen has a retry button).
+- Dates arrive in UTC and are shown in the device's **local timezone** (via `dayjs`).
+- Accessibility labels, roles and hints on interactive elements.
+- Unit and integration tests with React Native Testing Library.
+- Husky pre-commit hook that runs lint-staged (ESLint + Prettier), a type check and the tests.
+
+---
+
+## Tech stack
+
+- **React Native 0.87** (CLI, New Architecture) + **TypeScript**
+- **Zustand** for state management
+- **React Navigation 7** (native stack)
+- **dayjs** for date formatting
+- **react-native-share** + **react-native-view-shot** for sharing
+- **Jest** + **@testing-library/react-native** for tests
+- **ESLint**, **Prettier**, **Husky**, **lint-staged** for code quality
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- **Node.js ≥ 22.11**
+- Set up your environment by following the official [React Native environment setup guide](https://reactnative.dev/docs/set-up-your-environment) (React Native CLI, not Expo):
+  - **Android:** Android Studio, Android SDK, JDK 17, and an emulator or a device with USB debugging on
+  - **iOS (macOS only):** Xcode, CocoaPods (`bundle install` installs it through the provided `Gemfile`)
+
+### 1. Install dependencies
 
 ```sh
-# Using npm
+git clone <this-repo-url>
+cd AeonTransactions
+npm install
+```
+
+### 2. Start Metro
+
+```sh
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
+### 3. Run the app
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+Leave Metro running and open a second terminal.
 
-### Android
+**Android**
 
 ```sh
-# Using npm
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+**iOS**
 
 ```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
+bundle install                       # first time only
+cd ios && bundle exec pod install && cd ..
 npm run ios
-
-# OR using Yarn
-yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### 4. Build a release APK (Android)
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```sh
+cd android
+./gradlew assembleRelease        # Windows: gradlew.bat assembleRelease
+```
 
-## Step 3: Modify your app
+The APK is written to `android/app/build/outputs/apk/release/app-release.apk`. Install it on a connected device with `adb install -r android/app/build/outputs/apk/release/app-release.apk`.
 
-Now that you have successfully run the app, let's make changes!
+**Signing:** release builds read their credentials from `android/keystore.properties`, which is git-ignored:
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+```properties
+storeFile=release.keystore        # relative to android/app
+storePassword=********
+keyAlias=********
+keyPassword=********
+```
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+If that file is missing, the release build falls back to the debug keystore. It still builds and installs, but it can't be uploaded to the Play Store. To create your own keystore:
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+```sh
+keytool -genkeypair -v -storetype PKCS12 -keystore android/app/release.keystore -alias <alias> -keyalg RSA -keysize 2048 -validity 10000
+```
 
-## Congratulations! :tada:
+> If the build fails after you change native dependencies, clean it and try again:
+> Android: `cd android && ./gradlew clean`. iOS: delete `ios/Pods` and run `pod install` again.
 
-You've successfully run and modified your React Native App. :partying_face:
+---
 
-### Now what?
+## Scripts
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+| Command                           | Description                          |
+| --------------------------------- | ------------------------------------ |
+| `npm start`                       | Start the Metro bundler              |
+| `npm run android` / `npm run ios` | Build and launch the app             |
+| `npm test`                        | Run the test suite                   |
+| `npm run test:coverage`           | Run the tests with a coverage report |
+| `npm run lint`                    | Lint the project with ESLint         |
+| `npm run typecheck`               | Type-check the project with `tsc`    |
 
-# Troubleshooting
+---
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+## Project structure
 
-# Learn More
+```
+src/
+├── api/            # Data access: mock backend payload and fetchTransactions()
+├── components/     # Presentational, reusable UI (list item, summary card, button, ...)
+├── constants/      # App-wide constants (currency)
+├── hooks/          # useShareTransaction: capture the receipt and open the share sheet
+├── navigation/     # Native stack navigator and typed route params
+├── screens/        # TransactionListScreen, TransactionDetailScreen
+├── store/          # Zustand store (useTransactionStore) and selectors
+├── theme/          # Colors, spacing, radius, typography tokens
+├── types/          # Domain types (Transaction, API response)
+└── utils/          # Pure helpers: formatting, sorting, grouping, summarising
+__tests__/
+├── integration/    # App-level flows: list → detail → share, error → retry
+├── store/          # Store behaviour
+└── utils/          # Pure function tests
+```
 
-To learn more about React Native, take a look at the following resources:
+### Architecture notes
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- **Layers only depend downwards:** `screens` → `store` / `hooks` / `components` → `utils` / `api` / `types`. The screens never call the API directly; they only read from and trigger actions on the store.
+- **API boundary:** `fetchTransactions()` in `src/api/transactionApi.ts` returns the backend's sample payload after a short simulated delay. To use a real backend, replace the body of that one function. Nothing else needs to change.
+- **Business logic lives in pure functions** (`src/utils`) so it can be unit tested without rendering anything. Examples: direction from the amount sign, month grouping, totals, the share message.
+- **Only the reference ID goes through navigation.** The detail screen looks up the transaction from the store (`selectTransactionById`), so route params stay small and serialisable, which will make deep linking easier later.
+- **Path alias:** `@/` maps to `src/` (set up in both `babel.config.js` and `tsconfig.json`).
+- **Currency formatting** is written by hand instead of using `Intl.NumberFormat`, because Hermes on some Android builds ships with limited `Intl` locale data.
+
+---
+
+## Testing
+
+```sh
+npm test
+```
+
+- `__tests__/utils` covers currency and date formatting, sorting, grouping, totals and the share message.
+- `__tests__/store` covers the loading, refreshing, success and error transitions, the duplicate-fetch guard and the selector.
+- `__tests__/integration` renders the whole app. It checks that the list renders, that tapping a row opens the details, that Share passes the right payload to the share sheet, and that the error screen's retry works.
+
+Tests run with `TZ=UTC` (set in `jest.config.js`) so the date assertions give the same result on any machine.
+
+---
+
+## Possible next steps
+
+- Connect a real API with a data-fetching layer (e.g. TanStack Query) for caching and background refetching.
+- Pagination or infinite scroll for long transaction histories.
+- Search and filters (by type, date range or amount).
+- Dark mode (all colours already come from `src/theme`, so this mostly means adding a second palette).
+- Localisation (i18n) for strings and currency.
+- End-to-end tests with Detox or Maestro.
