@@ -33,7 +33,7 @@ export function DirectionIcon({ direction, size = 40 }: Props) {
           },
         ]}
       >
-        {isIncoming ? '↓' : '↑'}
+        {isIncoming ? 'IN' : 'OUT'}
       </Text>
     </View>
   );
