@@ -1,4 +1,8 @@
-import type { Transaction, TransactionDirection } from '@/types/transaction';
+import type {
+  Transaction,
+  TransactionDirection,
+  TransactionSummary,
+} from '@/types/transaction';
 import {
   formatDateTime,
   formatMonthYear,
@@ -8,11 +12,6 @@ import {
 export interface TransactionSection {
   title: string;
   data: Transaction[];
-}
-
-export interface TransactionSummary {
-  incoming: number;
-  outgoing: number;
 }
 
 export const getDirection = (amount: number): TransactionDirection =>
@@ -47,14 +46,24 @@ export function groupByMonth(
   return sections;
 }
 
+/**
+ * Totals incoming and outgoing amounts. Sums in cents so thousands of
+ * additions don't pile up floating point error.
+ */
 export function summarize(transactions: Transaction[]): TransactionSummary {
-  return transactions.reduce<TransactionSummary>(
-    (acc, { amount }) =>
-      amount < 0
-        ? { ...acc, outgoing: acc.outgoing + Math.abs(amount) }
-        : { ...acc, incoming: acc.incoming + amount },
-    { incoming: 0, outgoing: 0 },
-  );
+  let incomingCents = 0;
+  let outgoingCents = 0;
+
+  for (const { amount } of transactions) {
+    const cents = Math.round(Math.abs(amount) * 100);
+    if (amount < 0) {
+      outgoingCents += cents;
+    } else {
+      incomingCents += cents;
+    }
+  }
+
+  return { incoming: incomingCents / 100, outgoing: outgoingCents / 100 };
 }
 
 /**

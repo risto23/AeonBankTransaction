@@ -15,4 +15,22 @@ export interface TransactionListResponse {
   data: Transaction[];
 }
 
+export interface TransactionSummary {
+  incoming: number;
+  outgoing: number;
+}
+
+/**
+ * One page of the transaction history, newest first.
+ *
+ * `nextCursor` is opaque to the client: pass it back to get the next page.
+ * `null` means there are no more pages. `summary` covers the whole history,
+ * not just this page, so it is computed by the server.
+ */
+export interface TransactionPage {
+  data: Transaction[];
+  nextCursor: string | null;
+  summary: TransactionSummary;
+}
+
 export type TransactionDirection = 'incoming' | 'outgoing';

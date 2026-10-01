@@ -16,6 +16,8 @@ A React Native (TypeScript) app that lets banking customers browse their latest 
 Extras:
 
 - **Zustand** store with `loading` / `refreshing` / `success` / `error` states, and a guard that stops duplicate fetches.
+- **10,000-transaction history with cursor pagination.** The mock API pages through 10,000 generated transactions, 30 at a time; the list loads the next page as you scroll (infinite scroll) and shows a retry button if a page fails. Responses that arrive after a refresh are dropped, so a slow page can't mix old and new data. Money in/out totals come from the API, because the client only ever holds part of the history.
+- **Offline handling.** A banner appears as soon as the device goes offline, and the transactions already loaded stay usable (details and sharing included). A failed refresh says why instead of failing silently. When the connection comes back, only what actually failed is retried, so the user keeps their scroll position. Requests time out after 10 seconds.
 - Pull-to-refresh, plus loading, empty and error screens (the error screen has a retry button).
 - Dates arrive in UTC and are shown in the device's **local timezone** (via `dayjs`).
 - Accessibility labels, roles and hints on interactive elements.
@@ -126,7 +128,7 @@ src/
 ├── api/            # Data access: mock backend payload and fetchTransactions()
 ├── components/     # Presentational, reusable UI (list item, summary card, button, ...)
 ├── constants/      # App-wide constants (currency)
-├── hooks/          # useShareTransaction: capture the receipt and open the share sheet
+├── hooks/          # useShareTransaction (receipt capture + share sheet), useNetworkStatus
 ├── navigation/     # Native stack navigator and typed route params
 ├── screens/        # TransactionListScreen, TransactionDetailScreen
 ├── store/          # Zustand store (useTransactionStore) and selectors
@@ -142,7 +144,7 @@ __tests__/
 ### Architecture notes
 
 - **Layers only depend downwards:** `screens` → `store` / `hooks` / `components` → `utils` / `api` / `types`. The screens never call the API directly; they only read from and trigger actions on the store.
-- **API boundary:** `fetchTransactions()` in `src/api/transactionApi.ts` returns the backend's sample payload after a short simulated delay. To use a real backend, replace the body of that one function. Nothing else needs to change.
+- **API boundary:** `fetchTransactions({ cursor })` in `src/api/transactionApi.ts` returns one page from an in-memory mock "server" (the backend's sample payload plus 9,996 generated transactions) after a short simulated delay. The mock checks NetInfo so offline behaviour can be tried on a device. To use a real backend, replace the body of `mockRequest`. Nothing else needs to change.
 - **Business logic lives in pure functions** (`src/utils`) so it can be unit tested without rendering anything. Examples: direction from the amount sign, month grouping, totals, the share message.
 - **Only the reference ID goes through navigation.** The detail screen looks up the transaction from the store (`selectTransactionById`), so route params stay small and serialisable, which will make deep linking easier later.
 - **Path alias:** `@/` maps to `src/` (set up in both `babel.config.js` and `tsconfig.json`).
@@ -157,8 +159,9 @@ npm test
 ```
 
 - `__tests__/utils` covers currency and date formatting, sorting, grouping, totals and the share message.
-- `__tests__/store` covers the loading, refreshing, success and error transitions, the duplicate-fetch guard and the selector.
-- `__tests__/integration` renders the whole app. It checks that the list renders, that tapping a row opens the details, that Share passes the right payload to the share sheet, and that the error screen's retry works.
+- `__tests__/api` pages through all 10,000 mock transactions (no gaps, no duplicates, newest first) and checks the offline error.
+- `__tests__/store` covers the loading, refreshing, success and error transitions, pagination, the duplicate-fetch guards, dropping stale pages after a refresh, and the selector.
+- `__tests__/integration` renders the whole app. It checks that the list renders, that tapping a row opens the details, that Share passes the right payload to the share sheet, that the error screen's retry works, infinite scroll, and going offline and back online.
 
 Tests run with `TZ=UTC` (set in `jest.config.js`) so the date assertions give the same result on any machine.
 
@@ -167,7 +170,8 @@ Tests run with `TZ=UTC` (set in `jest.config.js`) so the date assertions give th
 ## Possible next steps
 
 - Connect a real API with a data-fetching layer (e.g. TanStack Query) for caching and background refetching.
-- Pagination or infinite scroll for long transaction histories.
+- Encrypted on-device cache (e.g. MMKV with a Keystore/Keychain key) so the last transactions are available after a cold start while offline.
+- FlashList for even longer lists.
 - Search and filters (by type, date range or amount).
 - Dark mode (all colours already come from `src/theme`, so this mostly means adding a second palette).
 - Localisation (i18n) for strings and currency.

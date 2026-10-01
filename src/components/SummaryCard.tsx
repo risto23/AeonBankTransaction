@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing, typography } from '@/theme';
 import { formatCurrency } from '@/utils/format';
-import type { TransactionSummary } from '@/utils/transaction';
+import type { TransactionSummary } from '@/types/transaction';
 
 interface Props {
   summary: TransactionSummary;

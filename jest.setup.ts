@@ -12,3 +12,7 @@ jest.mock('react-native-view-shot', () => ({
   __esModule: true,
   captureRef: jest.fn(() => Promise.resolve('file:///tmp/receipt.png')),
 }));
+
+jest.mock('@react-native-community/netinfo', () =>
+  require('@react-native-community/netinfo/jest/netinfo-mock.js'),
+);

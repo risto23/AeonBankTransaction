@@ -8,5 +8,6 @@ module.exports = {
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|react-native-.*)/)',
   ],
+  testPathIgnorePatterns: ['/node_modules/', '<rootDir>/__tests__/helpers.ts'],
   collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.d.ts'],
 };
